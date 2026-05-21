@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.*
+*.d.mts
+*.d.mts.map
+eslint.config.mjs
+eslint.config.mjs.map
