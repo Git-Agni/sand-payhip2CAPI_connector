@@ -1,13 +1,40 @@
 import type { Request, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
+import { config } from "../config/env.js";
 import { validatePayhipPaidWebhook } from "../schemas/payhip.schema.js";
 import { MetaCapiService } from "../services/metaCapi.service.js";
 import { logger } from "../services/logging.service.js";
+import { sha256Raw } from "../utils/hash.js";
 
 const metaCapiService = new MetaCapiService();
 
+const hasValidPayhipSignature = (signature: unknown): boolean => {
+  if (!config.payhip.apiKey) {
+    return true;
+  }
+
+  if (typeof signature !== "string") {
+    return false;
+  }
+
+  const expectedSignature = sha256Raw(config.payhip.apiKey);
+  const expected = Buffer.from(expectedSignature, "hex");
+  const actual = Buffer.from(signature, "hex");
+
+  if (actual.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(actual, expected);
+};
 
 export const handlePayhipWebhook = async (request: Request, response: Response): Promise<void> => {
 
+  if (!hasValidPayhipSignature(request.body?.signature)) {
+    logger.warn("Rejected Payhip webhook with invalid signature");
+    response.status(401).json({ error: "invalid_payhip_signature" });
+    return;
+  }
 
   if (request.body?.type !== "paid") {
     logger.info("Ignored unsupported Payhip webhook event", {
