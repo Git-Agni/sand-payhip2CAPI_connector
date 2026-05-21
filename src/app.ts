@@ -28,3 +28,4 @@ app.get("/health", (_request, response) => {
 });
 
 app.use(payhipWebhookRouter);
+export default app

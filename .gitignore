@@ -6,3 +6,4 @@ dist/
 *.d.mts.map
 eslint.config.mjs
 eslint.config.mjs.map
+.vercel
