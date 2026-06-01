@@ -2,11 +2,13 @@ import type { Request, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { config } from "../config/env.js";
 import { validatePayhipPaidWebhook } from "../schemas/payhip.schema.js";
-import { MetaCapiService } from "../services/metaCapi.service.js";
+import { makeMetaCapiService } from "../services/metaCapi.service.js";
 import { logger } from "../services/logging.service.js";
 import { sha256Raw } from "../utils/hash.js";
+import { makeCustomerioService } from "../services/customerio.service.js";
 
-const metaCapiService = new MetaCapiService();
+const metaCapiService = makeMetaCapiService();
+const customerIoService = makeCustomerioService()
 
 const hasValidPayhipSignature = (signature: unknown): boolean => {
   if (!config.payhip.apiKey) {
@@ -55,20 +57,8 @@ export const handlePayhipWebhook = async (request: Request, response: Response):
   }
 
   try {
-    logger.info("Processing Payhip paid webhook", {
-      payhipTransactionId: validation.data.id,
-      itemCount: validation.data.items.length,
-      currency: validation.data.currency,
-      value: validation.data.price / 100,
-    });
-
     const metaResponse = await metaCapiService.sendPurchaseFromPayhip(validation.data);
-
-    logger.info("Payhip webhook forwarded to Meta CAPI", {
-      payhipTransactionId: validation.data.id,
-      eventsReceived: metaResponse.events_received,
-      fbtraceId: metaResponse.fbtrace_id,
-    });
+    customerIoService.addUserToCustomerIo(validation.data);
 
     response.status(200).json({
       status: "ok",

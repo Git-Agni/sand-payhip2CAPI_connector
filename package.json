@@ -3,7 +3,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx --watch  src/server.ts",
-    "lint": "eslint src eslint.config.mts"
+    "lint": "eslint src eslint.config.mts",
+    "test": "vitest --watch"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -19,7 +20,9 @@
   },
   "type": "module",
   "dependencies": {
+    "@customerio/cdp-analytics-node": "^0.4.16",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "vitest": "^4.1.7"
   }
 }

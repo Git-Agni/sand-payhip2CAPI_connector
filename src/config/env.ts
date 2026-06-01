@@ -12,6 +12,9 @@ export interface AppConfig {
     readonly apiKey?: string;
     readonly webhookToken?: string;
   };
+  readonly customerio: {
+    readonly apiSecret: string
+  }
 }
 
 const getRequiredEnv = (name: string): string => {
@@ -19,7 +22,6 @@ const getRequiredEnv = (name: string): string => {
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
-
   return value;
 };
 
@@ -30,7 +32,7 @@ const getOptionalEnv = (name: string): string | undefined => {
 
 const parsePort = (value: string | undefined): number => {
   if (!value) {
-    return 3000;
+    return 8000;
   }
 
   const port = Number(value);
@@ -60,8 +62,12 @@ const payhipConfig: AppConfig["payhip"] = {
   ...(payhipWebhookToken ? { webhookToken: payhipWebhookToken } : {}),
 };
 
+const customerioConfig: AppConfig["customerio"] = {
+  apiSecret: getRequiredEnv("CUSTOMERIO_API_SECRET")
+}
 export const config: AppConfig = {
   port: parsePort(process.env.PORT),
   meta: metaConfig,
   payhip: payhipConfig,
+  customerio: customerioConfig
 };

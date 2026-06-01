@@ -4,9 +4,9 @@ import type { MetaEventsRequest, MetaEventsResponse, MetaPurchaseEvent } from ".
 import { sha256Normalized } from "../utils/hash.js";
 import { logger } from "./logging.service.js";
 
-export class MetaCapiService {
-  async sendPurchaseFromPayhip(payload: PayhipPaidWebhook): Promise<MetaEventsResponse> {
-    const event = this.toPurchaseEvent(payload);
+export function makeMetaCapiService() {
+  async function sendPurchaseFromPayhip(payload: PayhipPaidWebhook): Promise<MetaEventsResponse> {
+    const event = toPurchaseEvent(payload);
     const requestBody: MetaEventsRequest = {
       data: [event],
       ...(config.meta.testEventCode ? { test_event_code: config.meta.testEventCode } : {}),
@@ -18,7 +18,7 @@ export class MetaCapiService {
       testMode: Boolean(config.meta.testEventCode),
     });
 
-    const response = await fetch(this.eventsUrl(), {
+    const response = await fetch(eventsUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -48,7 +48,7 @@ export class MetaCapiService {
     return metaResponse;
   }
 
-  private toPurchaseEvent(payload: PayhipPaidWebhook): MetaPurchaseEvent {
+  function toPurchaseEvent(payload: PayhipPaidWebhook): MetaPurchaseEvent {
     const contentIds = payload.items.map((item) => item.product_id);
 
     return {
@@ -76,8 +76,12 @@ export class MetaCapiService {
     };
   }
 
-  private eventsUrl(): string {
+  function eventsUrl(): string {
     const params = new URLSearchParams({ access_token: config.meta.accessToken });
     return `https://graph.facebook.com/${config.meta.graphApiVersion}/${config.meta.pixelId}/events?${params.toString()}`;
+  }
+
+  return {
+    sendPurchaseFromPayhip
   }
 }
