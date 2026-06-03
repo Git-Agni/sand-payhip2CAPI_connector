@@ -4,3 +4,4 @@ import { handleSlackRoasCron } from '../controllers/vercelCron.controller.js';
 export const vercelCronRouter = Router();
 
 vercelCronRouter.get('/cron/slack-roas', handleSlackRoasCron);
+vercelCronRouter.get('/cron/slack-roas/:period', handleSlackRoasCron);

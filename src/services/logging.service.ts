@@ -1,4 +1,5 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogFormat = 'pretty' | 'json';
 
 export type LogMetadata = Record<string, unknown>;
 
@@ -22,6 +23,9 @@ const parseLogLevel = (value: string | undefined): LogLevel => {
   return 'info';
 };
 
+const parseLogFormat = (value: string | undefined): LogFormat =>
+  value === 'json' ? 'json' : 'pretty';
+
 const serializeError = (error: unknown): LogMetadata => {
   if (error instanceof Error) {
     return {
@@ -39,6 +43,7 @@ export class LoggingService {
     private readonly minimumLevel: LogLevel = parseLogLevel(
       process.env.LOG_LEVEL,
     ),
+    private readonly format: LogFormat = parseLogFormat(process.env.LOG_FORMAT),
   ) {}
 
   debug(message: string, metadata?: LogMetadata): void {
@@ -76,7 +81,10 @@ export class LoggingService {
       ...(metadata && Object.keys(metadata).length > 0 ? { metadata } : {}),
     };
 
-    const line = JSON.stringify(entry);
+    const line =
+      this.format === 'json'
+        ? JSON.stringify(entry)
+        : formatPrettyLogLine(entry);
 
     if (level === 'error') {
       console.error(line);
@@ -93,3 +101,43 @@ export class LoggingService {
 }
 
 export const logger = new LoggingService();
+
+function formatPrettyLogLine(entry: {
+  readonly timestamp: string;
+  readonly level: LogLevel;
+  readonly message: string;
+  readonly metadata?: LogMetadata;
+}): string {
+  const metadata =
+    entry.metadata && Object.keys(entry.metadata).length > 0
+      ? ` ${formatMetadata(entry.metadata)}`
+      : '';
+
+  return `${entry.timestamp} ${entry.level.toUpperCase()} ${entry.message}${metadata}`;
+}
+
+function formatMetadata(metadata: LogMetadata): string {
+  return Object.entries(metadata)
+    .map(([key, value]) => `${key}=${formatMetadataValue(value)}`)
+    .join(' ');
+}
+
+function formatMetadataValue(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+
+  if (value === undefined) {
+    return 'undefined';
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (typeof value === 'string') {
+    return value.includes(' ') ? JSON.stringify(value) : value;
+  }
+
+  return JSON.stringify(value);
+}

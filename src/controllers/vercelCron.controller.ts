@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
 import { config } from '../config/env.js';
 import { logger } from '../services/logging.service.js';
+import {
+  makeRoasReportService,
+  type RoasReportPeriod,
+} from '../services/roasReport.service.js';
+
+const roasReportService = makeRoasReportService();
 
 const hasValidCronAuthorization = (
   authorization: string | undefined,
@@ -24,14 +30,59 @@ export const handleSlackRoasCron = async (
     return;
   }
 
+  const period = readRequestedPeriod(request);
+
+  if (!period) {
+    response.status(400).json({
+      error: 'invalid_roas_period',
+      expected: ['daily', 'weekly'],
+    });
+    return;
+  }
+
   logger.info('Accepted Vercel cron ROAS calculation request', {
     report: 'slack_roas',
-    defaultPeriod: 'previous_completed_day',
+    period,
   });
 
-  response.status(202).json({
-    status: 'accepted',
-    report: 'slack_roas',
-    defaultPeriod: 'previous_completed_day',
-  });
+  try {
+    await roasReportService.logCampaignRoas(period);
+    response.status(202).json({
+      status: 'accepted',
+      report: 'slack_roas',
+      period,
+    });
+  } catch (error) {
+    logger.error('Failed to calculate Vercel cron ROAS report', error, {
+      report: 'slack_roas',
+      period,
+    });
+    response.status(502).json({
+      error: 'roas_report_failed',
+      message: error instanceof Error ? error.message : 'Unknown ROAS error',
+    });
+  }
 };
+
+function readRequestedPeriod(request: Request): RoasReportPeriod | null {
+  const period =
+    typeof request.params.period === 'string'
+      ? request.params.period
+      : typeof request.query.period === 'string'
+        ? request.query.period
+        : readBodyPeriod(request.body);
+
+  if (period === 'daily' || period === 'weekly') {
+    return period;
+  }
+
+  return null;
+}
+
+function readBodyPeriod(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return undefined;
+  }
+
+  return (body as Record<string, unknown>).period;
+}

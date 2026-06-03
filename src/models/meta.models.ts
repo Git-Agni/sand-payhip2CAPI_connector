@@ -38,3 +38,16 @@ export interface MetaEventsResponse {
   readonly messages?: readonly string[];
   readonly fbtrace_id?: string;
 }
+
+export interface MetaInsightsCampaignRow {
+  readonly campaign_id?: string;
+  readonly campaign_name?: string;
+  readonly spend?: string;
+}
+
+export interface MetaInsightsResponse {
+  readonly data?: readonly MetaInsightsCampaignRow[];
+  readonly paging?: {
+    readonly next?: string;
+  };
+}

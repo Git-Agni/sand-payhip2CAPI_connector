@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/vercel/cron/slack-roas/daily",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/vercel/cron/slack-roas/weekly",
+      "schedule": "30 3 * * 1"
+    }
+  ]
+}

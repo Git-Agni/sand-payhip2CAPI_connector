@@ -29,5 +29,5 @@ app.get('/health', (_request, response) => {
 });
 
 app.use(payhipWebhookRouter);
-app.use(vercelCronRouter);
+app.use('/vercel', vercelCronRouter);
 export default app;
