@@ -15,6 +15,7 @@ META_EVENT_SOURCE_URL=https://your-site.example
 META_TEST_EVENT_CODE=optional_meta_test_event_code
 PAYHIP_API_KEY=optional_payhip_api_key_for_signature_verification
 PAYHIP_WEBHOOK_TOKEN=optional_shared_url_token
+MONGO_DB_URL=mongodb://localhost:27017/payhip-capi-attribution
 LOG_LEVEL=info
 PORT=3000
 ```
@@ -25,6 +26,9 @@ field before accepting the webhook.
 
 `LOG_LEVEL` is optional and defaults to `info`. Supported values are `debug`,
 `info`, `warn`, and `error`. Logs are emitted as JSON lines.
+
+`MONGO_DB_URL` is optional and defaults to
+`mongodb://localhost:27017/payhip-capi-attribution`.
 
 `PAYHIP_WEBHOOK_TOKEN` is also optional; when set, configure Payhip to call:
 
@@ -43,6 +47,7 @@ Only Payhip `paid` webhooks are sent to Meta. Other Payhip event types return
 ## Commands
 
 ```sh
+docker compose up -d mongodb
 npm run build
 npm start
 ```

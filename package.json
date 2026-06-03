@@ -2,8 +2,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "nodemon --watch src --ext ts --exec \"tsx --inspect=0.0.0.0:9229 src/app.ts\"",
-    "lint": "eslint src eslint.config.mts",
+    "dev": "nodemon --watch src --ext ts --exec \"tsx --inspect=0.0.0.0:9229 src/server.ts\"",
+    "lint": "eslint src eslint.config.mjs",
     "test": "vitest --watch"
   },
   "devDependencies": {
@@ -25,6 +25,7 @@
     "@customerio/cdp-analytics-node": "^0.4.16",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "mongoose": "^9.6.3",
     "vitest": "^4.1.7"
   }
 }

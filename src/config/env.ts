@@ -1,6 +1,7 @@
 import "dotenv/config";
 export interface AppConfig {
   readonly port: number;
+  readonly mongoDbUrl: string;
   readonly meta: {
     readonly graphApiVersion: string;
     readonly pixelId: string;
@@ -48,6 +49,7 @@ const metaTestEventCode = getOptionalEnv("META_TEST_EVENT_CODE");
 const metaEventSourceUrl = getOptionalEnv("META_EVENT_SOURCE_URL");
 const payhipApiKey = getOptionalEnv("PAYHIP_API_KEY");
 const payhipWebhookToken = getOptionalEnv("PAYHIP_WEBHOOK_TOKEN");
+const mongoDbUrl = getOptionalEnv("MONGO_DB_URL") ?? "mongodb://localhost:27017/payhip-capi-attribution";
 
 const metaConfig: AppConfig["meta"] = {
   graphApiVersion: getOptionalEnv("META_GRAPH_API_VERSION") ?? "v25.0",
@@ -67,6 +69,7 @@ const customerioConfig: AppConfig["customerio"] = {
 }
 export const config: AppConfig = {
   port: parsePort(process.env.PORT),
+  mongoDbUrl,
   meta: metaConfig,
   payhip: payhipConfig,
   customerio: customerioConfig
