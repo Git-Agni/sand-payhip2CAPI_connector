@@ -5,7 +5,7 @@ import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
 import { logger } from './logging.service.js';
 import { makeMetaInsightsService } from './metaInsights.service.js';
 
-export type RoasReportPeriod = 'daily' | 'weekly';
+export type RoasReportPeriod = 'daily' | 'weekly' | 'monthly';
 
 interface DateRange {
   readonly start: Date;
@@ -101,6 +101,12 @@ export function resolveDateRange(
 
   if (period === 'weekly') {
     start.setUTCDate(start.getUTCDate() - 7);
+  }
+
+  if (period === 'monthly') {
+    start.setUTCMonth(start.getUTCMonth() - 1, 1);
+    end.setTime(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+    end.setUTCMilliseconds(end.getUTCMilliseconds() - 1);
   }
 
   return {
@@ -406,16 +412,38 @@ function formatSlackRoasReport(
     },
   );
   const totalRoas = totals.spend > 0 ? totals.revenue / totals.spend : null;
-  const lines = reportRows.map(
-    (row) =>
-      `- ${row.campaignName} (${row.campaignId}) -> ${row.productName} (${row.productId}): revenue ${formatMoney(row.revenue)}, spend ${formatMoney(row.spend)}, ROAS ${row.roas === null ? 'n/a' : `${roundRatio(row.roas)}x`}, purchases ${row.purchaseCount}`,
-  );
+  const lines =
+    reportRows.length > 0
+      ? reportRows.map(formatSlackRoasRow)
+      : ['No campaign or product activity found for this period.'];
 
   return [
-    `Payhip Meta ROAS ${period} report`,
-    `${dateRange.metaSince}..${dateRange.metaUntil}`,
-    `Total: revenue ${formatMoney(totals.revenue)}, spend ${formatMoney(totals.spend)}, ROAS ${totalRoas === null ? 'n/a' : `${roundRatio(totalRoas)}x`}, purchases ${totals.purchaseCount}`,
+    `📊 *Payhip × Meta ROAS ${formatPeriodLabel(period)} Report*`,
+    `🗓️ *Date range:* ${dateRange.metaSince} → ${dateRange.metaUntil}`,
     '',
+    '*Summary*',
+    `💰 *Revenue:* ${formatMoney(totals.revenue)}`,
+    `💸 *Ad spend:* ${formatMoney(totals.spend)}`,
+    `📈 *ROAS:* ${formatRoas(totalRoas)}`,
+    `🛒 *Purchases:* ${totals.purchaseCount}`,
+    '',
+    '*Campaign Breakdown*',
     ...lines,
   ].join('\n');
+}
+
+function formatSlackRoasRow(row: RoasReportRow): string {
+  return [
+    `• 🎯 *${row.campaignName}* (${row.campaignId})`,
+    `  ↳ 📦 ${row.productName} (${row.productId})`,
+    `  ↳ 💰 Revenue: ${formatMoney(row.revenue)} | 💸 Spend: ${formatMoney(row.spend)} | 📈 ROAS: ${formatRoas(row.roas)} | 🛒 Purchases: ${row.purchaseCount}`,
+  ].join('\n');
+}
+
+function formatRoas(value: number | null): string {
+  return value === null ? 'n/a' : `${roundRatio(value)}x`;
+}
+
+function formatPeriodLabel(period: RoasReportPeriod): string {
+  return period.charAt(0).toUpperCase() + period.slice(1);
 }

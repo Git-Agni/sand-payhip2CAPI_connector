@@ -60,15 +60,16 @@ https://your-domain.example/webhooks/payhip?token=your_token
 - `GET /cron/slack-roas`
 - `GET /cron/slack-roas/daily`
 - `GET /cron/slack-roas/weekly`
+- `GET /cron/slack-roas/monthly`
 
 Only Payhip `paid` webhooks are sent to Meta. Other Payhip event types return
 `200` with an ignored status so Payhip does not retry them.
 
 The Vercel cron route requires `Authorization: Bearer ${CRON_SECRET}`. The cron
-accepts `daily` or `weekly` as a path segment, query string `period`, or JSON
-body field. It queries stored Payhip purchases and Meta Ads Insights, then logs
-campaign ROAS values to the console and posts them to Slack when
-`SLACK_WEBHOOK_URL` is configured.
+accepts `daily`, `weekly`, or `monthly` as a path segment, query string
+`period`, or JSON body field. It queries stored Payhip purchases and Meta Ads
+Insights, then logs campaign ROAS values to the console and posts them to Slack
+when `SLACK_WEBHOOK_URL` is configured.
 
 ## Commands
 

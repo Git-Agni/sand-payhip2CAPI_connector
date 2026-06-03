@@ -35,7 +35,7 @@ export const handleSlackRoasCron = async (
   if (!period) {
     response.status(400).json({
       error: 'invalid_roas_period',
-      expected: ['daily', 'weekly'],
+      expected: ['daily', 'weekly', 'monthly'],
     });
     return;
   }
@@ -72,7 +72,7 @@ function readRequestedPeriod(request: Request): RoasReportPeriod | null {
         ? request.query.period
         : readBodyPeriod(request.body);
 
-  if (period === 'daily' || period === 'weekly') {
+  if (period === 'daily' || period === 'weekly' || period === 'monthly') {
     return period;
   }
 

@@ -7,6 +7,10 @@
     {
       "path": "/vercel/cron/slack-roas/weekly",
       "schedule": "30 3 * * 1"
+    },
+    {
+      "path": "/vercel/cron/slack-roas/monthly",
+      "schedule": "30 3 1 * *"
     }
   ]
 }
