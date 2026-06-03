@@ -59,12 +59,10 @@ export const handlePayhipWebhook = async (
     logger.warn('Rejected invalid Payhip paid webhook payload', {
       errors: validation.errors ?? [],
     });
-    response
-      .status(400)
-      .json({
-        error: 'invalid_payhip_payload',
-        details: validation.errors ?? [],
-      });
+    response.status(400).json({
+      error: 'invalid_payhip_payload',
+      details: validation.errors ?? [],
+    });
     return;
   }
 

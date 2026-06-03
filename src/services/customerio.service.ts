@@ -1,14 +1,13 @@
-import { Analytics } from "@customerio/cdp-analytics-node";
-import { config } from "../config/env.js";
-import type { PayhipPaidWebhook } from "../models/payhip.models.js";
-
+import { Analytics } from '@customerio/cdp-analytics-node';
+import { config } from '../config/env.js';
+import type { PayhipPaidWebhook } from '../models/payhip.models.js';
 
 export function makeCustomerioService() {
   const sdk = new Analytics({
     writeKey: config.customerio.apiSecret,
     maxEventsInBatch: 10,
     flushInterval: 10,
-    host: "https://cdp-eu.customer.io",
+    host: 'https://cdp-eu.customer.io',
   });
 
   function addUserToCustomerIo(payload: PayhipPaidWebhook) {
@@ -16,13 +15,13 @@ export function makeCustomerioService() {
       userId: payload.email,
       traits: buildCustomerIoTraits(payload),
       context: {
-        ip: payload.ip_address
-      }
+        ip: payload.ip_address,
+      },
     });
 
     sdk.track({
       userId: payload.email,
-      event: "Payhip Purchase",
+      event: 'Payhip Purchase',
       properties: payload,
     });
   }
@@ -32,7 +31,9 @@ export function makeCustomerioService() {
   };
 }
 
-const buildCustomerIoTraits = (payload: PayhipPaidWebhook): Record<string, unknown> => ({
+const buildCustomerIoTraits = (
+  payload: PayhipPaidWebhook,
+): Record<string, unknown> => ({
   email: payload.email,
   payhip_id: payload.id,
   currency: payload.currency,

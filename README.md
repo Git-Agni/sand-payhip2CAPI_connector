@@ -16,6 +16,7 @@ META_TEST_EVENT_CODE=optional_meta_test_event_code
 PAYHIP_API_KEY=optional_payhip_api_key_for_signature_verification
 PAYHIP_WEBHOOK_TOKEN=optional_shared_url_token
 MONGO_DB_URL=mongodb://localhost:27017/payhip-capi-attribution
+CRON_SECRET=shared_secret_for_vercel_cron
 LOG_LEVEL=info
 PORT=3000
 ```
@@ -40,9 +41,13 @@ https://your-domain.example/webhooks/payhip?token=your_token
 
 - `GET /health`
 - `POST /webhooks/payhip`
+- `GET /cron/slack-roas`
 
 Only Payhip `paid` webhooks are sent to Meta. Other Payhip event types return
 `200` with an ignored status so Payhip does not retry them.
+
+The Vercel cron route requires `Authorization: Bearer ${CRON_SECRET}` and is
+reserved for the automated Slack ROAS calculation flow.
 
 ## Commands
 

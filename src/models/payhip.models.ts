@@ -1,8 +1,8 @@
 export type PayhipWebhookType =
-  | "paid"
-  | "refunded"
-  | "subscription.created"
-  | "subscription.deleted";
+  | 'paid'
+  | 'refunded'
+  | 'subscription.created'
+  | 'subscription.deleted';
 
 export interface PayhipWebhookItem {
   readonly product_id: string;
@@ -33,13 +33,13 @@ export interface PayhipPaidWebhook {
   readonly unconsented_from_emails?: boolean;
   readonly is_gift?: boolean;
   readonly date: number;
-  readonly type: "paid";
+  readonly type: 'paid';
   readonly signature?: string;
 }
 
 export type PayhipWebhookPayload =
   | PayhipPaidWebhook
   | {
-      readonly type: Exclude<PayhipWebhookType, "paid">;
+      readonly type: Exclude<PayhipWebhookType, 'paid'>;
       readonly id?: string;
     };

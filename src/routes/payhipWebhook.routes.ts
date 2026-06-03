@@ -1,6 +1,6 @@
-import { Router } from "express";
-import { handlePayhipWebhook } from "../controllers/payhipWebhook.controller.js";
+import { Router } from 'express';
+import { handlePayhipWebhook } from '../controllers/payhipWebhook.controller.js';
 
 export const payhipWebhookRouter = Router();
 
-payhipWebhookRouter.post("/webhooks/payhip", handlePayhipWebhook);
+payhipWebhookRouter.post('/webhooks/payhip', handlePayhipWebhook);

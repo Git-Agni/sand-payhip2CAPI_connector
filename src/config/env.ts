@@ -1,4 +1,4 @@
-import "dotenv/config";
+import 'dotenv/config';
 export interface AppConfig {
   readonly port: number;
   readonly mongoDbUrl: string;
@@ -14,8 +14,11 @@ export interface AppConfig {
     readonly webhookToken?: string;
   };
   readonly customerio: {
-    readonly apiSecret: string
-  }
+    readonly apiSecret: string;
+  };
+  readonly cron: {
+    readonly secret?: string;
+  };
 }
 
 const getRequiredEnv = (name: string): string => {
@@ -39,38 +42,47 @@ const parsePort = (value: string | undefined): number => {
   const port = Number(value);
 
   if (!Number.isInteger(port) || port <= 0) {
-    throw new Error("PORT must be a positive integer");
+    throw new Error('PORT must be a positive integer');
   }
 
   return port;
 };
 
-const metaTestEventCode = getOptionalEnv("META_TEST_EVENT_CODE");
-const metaEventSourceUrl = getOptionalEnv("META_EVENT_SOURCE_URL");
-const payhipApiKey = getOptionalEnv("PAYHIP_API_KEY");
-const payhipWebhookToken = getOptionalEnv("PAYHIP_WEBHOOK_TOKEN");
-const mongoDbUrl = getOptionalEnv("MONGO_DB_URL") ?? "mongodb://localhost:27017/payhip-capi-attribution";
+const metaTestEventCode = getOptionalEnv('META_TEST_EVENT_CODE');
+const metaEventSourceUrl = getOptionalEnv('META_EVENT_SOURCE_URL');
+const payhipApiKey = getOptionalEnv('PAYHIP_API_KEY');
+const payhipWebhookToken = getOptionalEnv('PAYHIP_WEBHOOK_TOKEN');
+const mongoDbUrl =
+  getOptionalEnv('MONGO_DB_URL') ??
+  'mongodb://localhost:27017/payhip-capi-attribution';
+const cronSecret = getOptionalEnv('CRON_SECRET');
 
-const metaConfig: AppConfig["meta"] = {
-  graphApiVersion: getOptionalEnv("META_GRAPH_API_VERSION") ?? "v25.0",
-  pixelId: getRequiredEnv("META_PIXEL_ID"),
-  accessToken: getRequiredEnv("META_ACCESS_TOKEN"),
+const metaConfig: AppConfig['meta'] = {
+  graphApiVersion: getOptionalEnv('META_GRAPH_API_VERSION') ?? 'v25.0',
+  pixelId: getRequiredEnv('META_PIXEL_ID'),
+  accessToken: getRequiredEnv('META_ACCESS_TOKEN'),
   ...(metaTestEventCode ? { testEventCode: metaTestEventCode } : {}),
   ...(metaEventSourceUrl ? { eventSourceUrl: metaEventSourceUrl } : {}),
 };
 
-const payhipConfig: AppConfig["payhip"] = {
+const payhipConfig: AppConfig['payhip'] = {
   ...(payhipApiKey ? { apiKey: payhipApiKey } : {}),
   ...(payhipWebhookToken ? { webhookToken: payhipWebhookToken } : {}),
 };
 
-const customerioConfig: AppConfig["customerio"] = {
-  apiSecret: getRequiredEnv("CUSTOMERIO_API_SECRET")
-}
+const customerioConfig: AppConfig['customerio'] = {
+  apiSecret: getRequiredEnv('CUSTOMERIO_API_SECRET'),
+};
+
+const cronConfig: AppConfig['cron'] = {
+  ...(cronSecret ? { secret: cronSecret } : {}),
+};
+
 export const config: AppConfig = {
   port: parsePort(process.env.PORT),
   mongoDbUrl,
   meta: metaConfig,
   payhip: payhipConfig,
-  customerio: customerioConfig
+  customerio: customerioConfig,
+  cron: cronConfig,
 };

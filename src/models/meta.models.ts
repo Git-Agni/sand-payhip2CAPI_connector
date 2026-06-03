@@ -13,16 +13,16 @@ export interface MetaCustomData {
   readonly currency: string;
   readonly value: number;
   readonly order_id: string;
-  readonly content_type: "product";
+  readonly content_type: 'product';
   readonly content_ids: readonly string[];
   readonly contents: readonly MetaContent[];
 }
 
 export interface MetaPurchaseEvent {
-  readonly event_name: "Purchase";
+  readonly event_name: 'Purchase';
   readonly event_time: number;
   readonly event_id: string;
-  readonly action_source: "website";
+  readonly action_source: 'website';
   readonly event_source_url?: string;
   readonly user_data: MetaUserData;
   readonly custom_data: MetaCustomData;

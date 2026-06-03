@@ -1,5 +1,6 @@
 import express from 'express';
 import { payhipWebhookRouter } from './routes/payhipWebhook.routes.js';
+import { vercelCronRouter } from './routes/vercelCron.routes.js';
 import { logger } from './services/logging.service.js';
 
 export const app = express();
@@ -28,4 +29,5 @@ app.get('/health', (_request, response) => {
 });
 
 app.use(payhipWebhookRouter);
+app.use(vercelCronRouter);
 export default app;

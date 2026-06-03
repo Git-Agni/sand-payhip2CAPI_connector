@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeCustomerioService } from "./customerio.service.js";
-import type { PayhipPaidWebhook } from "../models/payhip.models.js";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeCustomerioService } from './customerio.service.js';
+import type { PayhipPaidWebhook } from '../models/payhip.models.js';
 
 const { analyticsMock, identifyMock, trackMock } = vi.hoisted(() => {
   const identifyMock = vi.fn();
@@ -15,25 +15,25 @@ const { analyticsMock, identifyMock, trackMock } = vi.hoisted(() => {
   return { analyticsMock, identifyMock, trackMock };
 });
 
-vi.mock("@customerio/cdp-analytics-node", () => ({
+vi.mock('@customerio/cdp-analytics-node', () => ({
   Analytics: analyticsMock,
   default: analyticsMock,
 }));
 
 const payhipPayload: PayhipPaidWebhook = {
-  id: "payhip-user",
-  email: "user@email.com",
-  currency: "USD",
+  id: 'payhip-user',
+  email: 'user@email.com',
+  currency: 'USD',
   price: 10000,
   vat_applied: false,
-  ip_address: "127.0.0.1",
+  ip_address: '127.0.0.1',
   items: [
     {
-      product_id: "product-123",
-      product_name: "Test Product",
-      product_key: "test-product",
-      product_permalink: "https://example.com/test-product",
-      quantity: "1",
+      product_id: 'product-123',
+      product_name: 'Test Product',
+      product_key: 'test-product',
+      product_permalink: 'https://example.com/test-product',
+      quantity: '1',
       on_sale: false,
       used_coupon: false,
       used_social_discount: false,
@@ -43,19 +43,19 @@ const payhipPayload: PayhipPaidWebhook = {
       has_variant: false,
     },
   ],
-  payment_type: "card",
+  payment_type: 'card',
   date: 1710000000,
-  type: "paid",
+  type: 'paid',
 };
 
-describe("testing customerio service", () => {
+describe('testing customerio service', () => {
   beforeEach(() => {
     analyticsMock.mockClear();
     identifyMock.mockClear();
     trackMock.mockClear();
   });
 
-  it("calls customerio with required items", () => {
+  it('calls customerio with required items', () => {
     const customerIoService = makeCustomerioService();
 
     customerIoService.addUserToCustomerIo(payhipPayload);
@@ -64,7 +64,7 @@ describe("testing customerio service", () => {
       writeKey: expect.any(String),
       maxEventsInBatch: 10,
       flushInterval: 10,
-      host: "https://cdp-eu.customer.io",
+      host: 'https://cdp-eu.customer.io',
     });
     expect(identifyMock).toHaveBeenCalledWith({
       userId: payhipPayload.email,
@@ -83,18 +83,17 @@ describe("testing customerio service", () => {
         purchase_date: payhipPayload.date,
         purchase_type: payhipPayload.type,
         item_count: payhipPayload.items.length,
-        product_ids: ["product-123"],
-        product_names: ["Test Product"],
-        product_keys: ["test-product"],
-        product_permalinks: ["https://example.com/test-product"],
+        product_ids: ['product-123'],
+        product_names: ['Test Product'],
+        product_keys: ['test-product'],
+        product_permalinks: ['https://example.com/test-product'],
         items: payhipPayload.items,
       },
     });
     expect(trackMock).toHaveBeenCalledWith({
       userId: payhipPayload.email,
-      event: "Payhip Purchase",
+      event: 'Payhip Purchase',
       properties: payhipPayload,
     });
   });
-
 });
