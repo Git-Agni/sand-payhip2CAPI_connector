@@ -2,10 +2,28 @@ import mongoose from 'mongoose';
 
 import { logger } from './logging.service.js';
 
-export const connectToDatabase = async (mongoDbUrl: string): Promise<void> => {
-  await mongoose.connect(mongoDbUrl);
+let connectionPromise: Promise<void> | null = null;
 
-  logger.info('MongoDB connected', {
-    databaseName: mongoose.connection.db?.databaseName,
-  });
+export const connectToDatabase = async (mongoDbUrl: string): Promise<void> => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (!connectionPromise) {
+    connectionPromise = mongoose
+      .connect(mongoDbUrl, {
+        serverSelectionTimeoutMS: 5_000,
+      })
+      .then(() => {
+        logger.info('MongoDB connected', {
+          databaseName: mongoose.connection.db?.databaseName,
+        });
+      })
+      .catch((error: unknown) => {
+        connectionPromise = null;
+        throw error;
+      });
+  }
+
+  await connectionPromise;
 };

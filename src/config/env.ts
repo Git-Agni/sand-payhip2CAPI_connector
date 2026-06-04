@@ -78,9 +78,7 @@ const metaAdAccountId = getOptionalEnv('META_AD_ACCOUNT_ID');
 const metaMarketingAccessToken = getOptionalEnv('META_MARKETING_ACCESS_TOKEN');
 const payhipApiKey = getOptionalEnv('PAYHIP_API_KEY');
 const payhipWebhookToken = getOptionalEnv('PAYHIP_WEBHOOK_TOKEN');
-const mongoDbUrl =
-  getOptionalEnv('MONGO_DB_URL') ??
-  'mongodb://localhost:27017/payhip-capi-attribution';
+const mongoDbUrl = readMongoDbUrl();
 const cronSecret = getOptionalEnv('CRON_SECRET');
 const slackWebhookUrl = getOptionalEnv('SLACK_WEBHOOK_URL');
 const roasProductMappings = parseRoasProductMappings(
@@ -127,6 +125,20 @@ export const config: AppConfig = {
     productMappings: roasProductMappings,
   },
 };
+
+function readMongoDbUrl(): string {
+  const value = getOptionalEnv('MONGO_DB_URL');
+
+  if (value) {
+    return value;
+  }
+
+  if (getOptionalEnv('VERCEL')) {
+    throw new Error('Missing required environment variable: MONGO_DB_URL');
+  }
+
+  return 'mongodb://localhost:27017/payhip-capi-attribution';
+}
 
 function parseRoasProductMappings(
   value: string | undefined,

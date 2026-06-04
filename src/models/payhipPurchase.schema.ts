@@ -5,7 +5,7 @@ const payhipPurchaseSchema = new Schema(
     payhipTransactionId: {
       type: String,
       required: true,
-      index: true,
+      unique: true,
     },
     date: {
       type: Date,
@@ -18,6 +18,7 @@ const payhipPurchaseSchema = new Schema(
     },
   },
   {
+    bufferCommands: false,
     collection: 'payhip_purchases',
     timestamps: true,
   },

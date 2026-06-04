@@ -2,6 +2,7 @@ import type { RoasProductMapping } from '../config/env.js';
 import { config } from '../config/env.js';
 import type { MetaInsightsCampaignRow } from '../models/meta.models.js';
 import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
+import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
 import { makeMetaInsightsService } from './metaInsights.service.js';
 
@@ -120,6 +121,8 @@ export function resolveDateRange(
 async function getProductRevenue(
   dateRange: DateRange,
 ): Promise<readonly ProductRevenue[]> {
+  await connectToDatabase(config.mongoDbUrl);
+
   const purchases = await PayhipPurchaseModel.collection
     .find({
       date: {

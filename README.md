@@ -44,7 +44,7 @@ report to that Slack incoming webhook after calculating it.
 `info`, `warn`, and `error`. `LOG_FORMAT` is optional and defaults to `pretty`;
 set it to `json` to emit structured JSON lines.
 
-`MONGO_DB_URL` is optional and defaults to
+`MONGO_DB_URL` is required on Vercel. For local development only, it defaults to
 `mongodb://localhost:27017/payhip-capi-attribution`.
 
 `PAYHIP_WEBHOOK_TOKEN` is also optional; when set, configure Payhip to call:

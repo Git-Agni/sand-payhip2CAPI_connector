@@ -1,5 +1,7 @@
+import { config } from '../config/env.js';
 import type { PayhipPaidWebhook } from '../models/payhip.models.js';
 import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
+import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
 
 export function makePayhipPurchaseService() {
@@ -9,11 +11,24 @@ export function makePayhipPurchaseService() {
   ): Promise<void> {
     const purchaseDate = new Date(payload.date * 1000);
 
-    await PayhipPurchaseModel.create({
-      payhipTransactionId: payload.id,
-      date: purchaseDate,
-      payload: buildStoredPayload(rawPayload, purchaseDate),
-    });
+    await connectToDatabase(config.mongoDbUrl);
+    await PayhipPurchaseModel.updateOne(
+      {
+        payhipTransactionId: payload.id,
+      },
+      {
+        $set: {
+          date: purchaseDate,
+          payload: buildStoredPayload(rawPayload, purchaseDate),
+        },
+        $setOnInsert: {
+          payhipTransactionId: payload.id,
+        },
+      },
+      {
+        upsert: true,
+      },
+    );
 
     logger.debug('Saved Payhip purchase webhook payload', {
       payhipTransactionId: payload.id,
