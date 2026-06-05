@@ -4,7 +4,9 @@ import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
 import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
 
-export type PayhipPurchaseService = ReturnType<typeof makePayhipPurchaseService>
+export type PayhipPurchaseService = ReturnType<
+  typeof makePayhipPurchaseService
+>;
 
 export function makePayhipPurchaseService() {
   async function populatePayhipPurchase(
@@ -37,8 +39,20 @@ export function makePayhipPurchaseService() {
     });
   }
 
+  async function getPurchasesByDateRange(start: Date, end: Date) {
+    return PayhipPurchaseModel.collection
+      .find({
+        date: {
+          $gte: start,
+          $lte: end,
+        },
+      })
+      .toArray();
+  }
+
   return {
     populatePayhipPurchase,
+    getPurchasesByDateRange,
   };
 }
 

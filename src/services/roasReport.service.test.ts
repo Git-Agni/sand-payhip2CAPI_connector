@@ -1,4 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  makeRoasReportService,
+  resolveDateRange,
+} from './roasReport.service.js';
+
+const makeTestRoasReportService = () =>
+  makeRoasReportService({
+    metaInsightsService: {
+      getCampaignSpend: vi.fn(async () => []),
+    },
+    payhipPurchaseService: {
+      populatePayhipPurchase: vi.fn(async () => undefined),
+      getPurchasesByDateRange: vi.fn(async () => []),
+    },
+  });
 
 describe('resolveDateRange', () => {
   beforeEach(() => {
@@ -8,9 +23,7 @@ describe('resolveDateRange', () => {
     vi.stubEnv('CUSTOMERIO_API_SECRET', 'customerio-api-secret');
   });
 
-  it('resolves daily reports to the previous completed UTC day', async () => {
-    const { resolveDateRange } = await import('./roasReport.service.js');
-
+  it('resolves daily reports to the previous completed UTC day', () => {
     const dateRange = resolveDateRange(
       'daily',
       new Date('2026-06-03T00:15:00.000Z'),
@@ -22,9 +35,7 @@ describe('resolveDateRange', () => {
     expect(dateRange.metaUntil).toBe('2026-06-02');
   });
 
-  it('resolves monthly reports to the previous completed UTC month', async () => {
-    const { resolveDateRange } = await import('./roasReport.service.js');
-
+  it('resolves monthly reports to the previous completed UTC month', () => {
     const dateRange = resolveDateRange(
       'monthly',
       new Date('2026-06-03T00:15:00.000Z'),
@@ -46,7 +57,7 @@ describe('formatSlackRoasReport', () => {
   });
 
   it('groups multiple products under one campaign without duplicating spend', async () => {
-    const { formatSlackRoasReport } = await import('./roasReport.service.js');
+    const { formatSlackRoasReport } = makeTestRoasReportService();
 
     const report = formatSlackRoasReport(
       'daily',
@@ -93,7 +104,7 @@ describe('formatSlackRoasReport', () => {
   });
 
   it('adds two blank lines between campaign groups', async () => {
-    const { formatSlackRoasReport } = await import('./roasReport.service.js');
+    const { formatSlackRoasReport } = makeTestRoasReportService();
 
     const report = formatSlackRoasReport(
       'weekly',
@@ -133,7 +144,7 @@ describe('formatSlackRoasReport', () => {
   });
 
   it('omits configured ids when no product or campaign data was found', async () => {
-    const { formatSlackRoasReport } = await import('./roasReport.service.js');
+    const { formatSlackRoasReport } = makeTestRoasReportService();
 
     const report = formatSlackRoasReport(
       'monthly',
@@ -165,7 +176,7 @@ describe('formatSlackRoasReport', () => {
   });
 
   it('shows organic campaign ids as organic purchase data', async () => {
-    const { formatSlackRoasReport } = await import('./roasReport.service.js');
+    const { formatSlackRoasReport } = makeTestRoasReportService();
 
     const report = formatSlackRoasReport(
       'daily',
