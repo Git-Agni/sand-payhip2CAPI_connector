@@ -4,6 +4,8 @@ import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
 import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
 
+export type PayhipPurchaseService = ReturnType<typeof makePayhipPurchaseService>
+
 export function makePayhipPurchaseService() {
   async function populatePayhipPurchase(
     payload: PayhipPaidWebhook,

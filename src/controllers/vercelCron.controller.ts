@@ -2,87 +2,97 @@ import type { Request, Response } from 'express';
 import { config } from '../config/env.js';
 import { logger } from '../services/logging.service.js';
 import {
-  makeRoasReportService,
   type RoasReportPeriod,
+  type RoasReportService,
 } from '../services/roasReport.service.js';
 
-const roasReportService = makeRoasReportService();
 
-const hasValidCronAuthorization = (
-  authorization: string | undefined,
-): boolean => authorization === `Bearer ${config.cron.secret}`;
+export default function makeVercelCronController({
+  roasReportService
+}: {
+  roasReportService: RoasReportService
+}) {
 
-export const handleSlackRoasCron = async (
-  request: Request,
-  response: Response,
-): Promise<void> => {
-  if (!config.cron.secret) {
-    logger.error(
-      'Rejected Vercel cron request because CRON_SECRET is not configured',
-    );
-    response.status(500).json({ error: 'cron_secret_not_configured' });
-    return;
-  }
+  const hasValidCronAuthorization = (
+    authorization: string | undefined,
+  ): boolean => authorization === `Bearer ${config.cron.secret}`;
 
-  if (!hasValidCronAuthorization(request.header('authorization'))) {
-    logger.warn('Rejected Vercel cron request with invalid authorization');
-    response.status(401).json({ error: 'invalid_cron_authorization' });
-    return;
-  }
+  const handleSlackRoasCron = async (
+    request: Request,
+    response: Response,
+  ): Promise<void> => {
+    if (!config.cron.secret) {
+      logger.error(
+        'Rejected Vercel cron request because CRON_SECRET is not configured',
+      );
+      response.status(500).json({ error: 'cron_secret_not_configured' });
+      return;
+    }
 
-  const period = readRequestedPeriod(request);
+    if (!hasValidCronAuthorization(request.header('authorization'))) {
+      logger.warn('Rejected Vercel cron request with invalid authorization');
+      response.status(401).json({ error: 'invalid_cron_authorization' });
+      return;
+    }
 
-  if (!period) {
-    response.status(400).json({
-      error: 'invalid_roas_period',
-      expected: ['daily', 'weekly', 'monthly'],
-    });
-    return;
-  }
+    const period = readRequestedPeriod(request);
 
-  logger.info('Accepted Vercel cron ROAS calculation request', {
-    report: 'slack_roas',
-    period,
-  });
+    if (!period) {
+      response.status(400).json({
+        error: 'invalid_roas_period',
+        expected: ['daily', 'weekly', 'monthly'],
+      });
+      return;
+    }
 
-  try {
-    await roasReportService.logCampaignRoas(period);
-    response.status(202).json({
-      status: 'accepted',
+    logger.info('Accepted Vercel cron ROAS calculation request', {
       report: 'slack_roas',
       period,
     });
-  } catch (error) {
-    logger.error('Failed to calculate Vercel cron ROAS report', error, {
-      report: 'slack_roas',
-      period,
-    });
-    response.status(502).json({
-      error: 'roas_report_failed',
-      message: error instanceof Error ? error.message : 'Unknown ROAS error',
-    });
+
+    try {
+      await roasReportService.logCampaignRoas(period);
+      response.status(202).json({
+        status: 'accepted',
+        report: 'slack_roas',
+        period,
+      });
+    } catch (error) {
+      logger.error('Failed to calculate Vercel cron ROAS report', error, {
+        report: 'slack_roas',
+        period,
+      });
+      response.status(502).json({
+        error: 'roas_report_failed',
+        message: error instanceof Error ? error.message : 'Unknown ROAS error',
+      });
+    }
+  };
+
+  function readRequestedPeriod(request: Request): RoasReportPeriod | null {
+    const period =
+      typeof request.params.period === 'string'
+        ? request.params.period
+        : typeof request.query.period === 'string'
+          ? request.query.period
+          : readBodyPeriod(request.body);
+
+    if (period === 'daily' || period === 'weekly' || period === 'monthly') {
+      return period;
+    }
+
+    return null;
   }
-};
 
-function readRequestedPeriod(request: Request): RoasReportPeriod | null {
-  const period =
-    typeof request.params.period === 'string'
-      ? request.params.period
-      : typeof request.query.period === 'string'
-        ? request.query.period
-        : readBodyPeriod(request.body);
+  function readBodyPeriod(body: unknown): unknown {
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return undefined;
+    }
 
-  if (period === 'daily' || period === 'weekly' || period === 'monthly') {
-    return period;
+    return (body as Record<string, unknown>).period;
   }
-
-  return null;
+  return {
+    handleSlackRoasCron
+  }
 }
 
-function readBodyPeriod(body: unknown): unknown {
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-    return undefined;
-  }
-
-  return (body as Record<string, unknown>).period;
-}

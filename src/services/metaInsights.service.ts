@@ -10,6 +10,8 @@ export interface MetaInsightsDateRange {
   readonly until: string;
 }
 
+export type MetaInsightsService = ReturnType<typeof makeMetaInsightsService>
+
 export function makeMetaInsightsService() {
   async function getCampaignSpend(
     dateRange: MetaInsightsDateRange,

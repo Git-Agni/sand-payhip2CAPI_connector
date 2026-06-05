@@ -1,7 +1,7 @@
 import express from 'express';
-import { payhipWebhookRouter } from './routes/payhipWebhook.routes.js';
-import { vercelCronRouter } from './routes/vercelCron.routes.js';
 import { logger } from './services/logging.service.js';
+import attachRoutes from './middlewares/routers.js';
+import { config } from './config/env.js';
 
 export const app = express();
 
@@ -12,7 +12,6 @@ app.use((request, response, next) => {
 
   response.on('finish', () => {
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
-
     logger.info('HTTP request completed', {
       method: request.method,
       path: request.path,
@@ -20,14 +19,13 @@ app.use((request, response, next) => {
       durationMs: Math.round(durationMs),
     });
   });
-
   next();
 });
 
 app.get('/health', (_request, response) => {
-  response.status(200).json({ status: 'ok' });
+  response.status(200).json({ status: 'ok', env: config.env });
 });
 
-app.use(payhipWebhookRouter);
-app.use('/vercel', vercelCronRouter);
+attachRoutes(app);
+
 export default app;

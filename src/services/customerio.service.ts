@@ -2,6 +2,8 @@ import { Analytics } from '@customerio/cdp-analytics-node';
 import { config } from '../config/env.js';
 import type { PayhipPaidWebhook } from '../models/payhip.models.js';
 
+export type CustomerIoService = ReturnType<typeof makeCustomerioService>
+
 export function makeCustomerioService() {
   const sdk = new Analytics({
     writeKey: config.customerio.apiSecret,

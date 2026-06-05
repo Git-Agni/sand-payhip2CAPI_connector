@@ -1,6 +1,8 @@
 import 'dotenv/config';
+type ENV = 'production' | 'development' | 'test';
 export interface AppConfig {
   readonly port: number;
+  readonly env: ENV;
   readonly mongoDbUrl: string;
   readonly meta: {
     readonly graphApiVersion: string;
@@ -58,6 +60,29 @@ const getOptionalEnv = (name: string): string | undefined => {
   return value && value.length > 0 ? value : undefined;
 };
 
+const env = {
+  ENV:
+    process.env.NODE_ENV === 'production'
+      ? 'production'
+      : ('development' as ENV),
+  PORT: process.env.PORT,
+  MONGO_DB_URL: getOptionalEnv('MONGO_DB_URL'),
+  VERCEL: getOptionalEnv('VERCEL'),
+  META_GRAPH_API_VERSION: getOptionalEnv('META_GRAPH_API_VERSION') ?? 'v25.0',
+  META_PIXEL_ID: getRequiredEnv('META_PIXEL_ID'),
+  META_ACCESS_TOKEN: getRequiredEnv('META_ACCESS_TOKEN'),
+  META_AD_ACCOUNT_ID: getOptionalEnv('META_AD_ACCOUNT_ID'),
+  META_MARKETING_ACCESS_TOKEN: getOptionalEnv('META_MARKETING_ACCESS_TOKEN'),
+  META_TEST_EVENT_CODE: getOptionalEnv('META_TEST_EVENT_CODE'),
+  META_EVENT_SOURCE_URL: getOptionalEnv('META_EVENT_SOURCE_URL'),
+  PAYHIP_API_KEY: getOptionalEnv('PAYHIP_API_KEY'),
+  PAYHIP_WEBHOOK_TOKEN: getOptionalEnv('PAYHIP_WEBHOOK_TOKEN'),
+  CUSTOMERIO_API_SECRET: getRequiredEnv('CUSTOMERIO_API_SECRET'),
+  CRON_SECRET: getOptionalEnv('CRON_SECRET'),
+  SLACK_WEBHOOK_URL: getOptionalEnv('SLACK_WEBHOOK_URL'),
+  ROAS_PRODUCT_MAPPINGS: getOptionalEnv('ROAS_PRODUCT_MAPPINGS'),
+};
+
 const parsePort = (value: string | undefined): number => {
   if (!value) {
     return 8000;
@@ -72,68 +97,50 @@ const parsePort = (value: string | undefined): number => {
   return port;
 };
 
-const metaTestEventCode = getOptionalEnv('META_TEST_EVENT_CODE');
-const metaEventSourceUrl = getOptionalEnv('META_EVENT_SOURCE_URL');
-const metaAdAccountId = getOptionalEnv('META_AD_ACCOUNT_ID');
-const metaMarketingAccessToken = getOptionalEnv('META_MARKETING_ACCESS_TOKEN');
-const payhipApiKey = getOptionalEnv('PAYHIP_API_KEY');
-const payhipWebhookToken = getOptionalEnv('PAYHIP_WEBHOOK_TOKEN');
-const mongoDbUrl = readMongoDbUrl();
-const cronSecret = getOptionalEnv('CRON_SECRET');
-const slackWebhookUrl = getOptionalEnv('SLACK_WEBHOOK_URL');
-const roasProductMappings = parseRoasProductMappings(
-  getOptionalEnv('ROAS_PRODUCT_MAPPINGS'),
-);
-
-const metaConfig: AppConfig['meta'] = {
-  graphApiVersion: getOptionalEnv('META_GRAPH_API_VERSION') ?? 'v25.0',
-  pixelId: getRequiredEnv('META_PIXEL_ID'),
-  accessToken: getRequiredEnv('META_ACCESS_TOKEN'),
-  marketingAccessToken:
-    metaMarketingAccessToken ?? getRequiredEnv('META_ACCESS_TOKEN'),
-  ...(metaAdAccountId ? { adAccountId: metaAdAccountId } : {}),
-  ...(metaTestEventCode ? { testEventCode: metaTestEventCode } : {}),
-  ...(metaEventSourceUrl ? { eventSourceUrl: metaEventSourceUrl } : {}),
-};
-
-const payhipConfig: AppConfig['payhip'] = {
-  ...(payhipApiKey ? { apiKey: payhipApiKey } : {}),
-  ...(payhipWebhookToken ? { webhookToken: payhipWebhookToken } : {}),
-};
-
-const customerioConfig: AppConfig['customerio'] = {
-  apiSecret: getRequiredEnv('CUSTOMERIO_API_SECRET'),
-};
-
-const cronConfig: AppConfig['cron'] = {
-  ...(cronSecret ? { secret: cronSecret } : {}),
-};
-
-const slackConfig: AppConfig['slack'] = {
-  ...(slackWebhookUrl ? { webhookUrl: slackWebhookUrl } : {}),
-};
-
 export const config: AppConfig = {
-  port: parsePort(process.env.PORT),
-  mongoDbUrl,
-  meta: metaConfig,
-  payhip: payhipConfig,
-  customerio: customerioConfig,
-  cron: cronConfig,
-  slack: slackConfig,
+  port: parsePort(env.PORT),
+  env: env.ENV,
+  mongoDbUrl: readMongoDbUrl(),
+  meta: {
+    graphApiVersion: env.META_GRAPH_API_VERSION,
+    pixelId: env.META_PIXEL_ID,
+    accessToken: env.META_ACCESS_TOKEN,
+    marketingAccessToken:
+      env.META_MARKETING_ACCESS_TOKEN ?? env.META_ACCESS_TOKEN,
+    ...(env.META_AD_ACCOUNT_ID ? { adAccountId: env.META_AD_ACCOUNT_ID } : {}),
+    ...(env.META_TEST_EVENT_CODE
+      ? { testEventCode: env.META_TEST_EVENT_CODE }
+      : {}),
+    ...(env.META_EVENT_SOURCE_URL
+      ? { eventSourceUrl: env.META_EVENT_SOURCE_URL }
+      : {}),
+  },
+  payhip: {
+    ...(env.PAYHIP_API_KEY ? { apiKey: env.PAYHIP_API_KEY } : {}),
+    ...(env.PAYHIP_WEBHOOK_TOKEN
+      ? { webhookToken: env.PAYHIP_WEBHOOK_TOKEN }
+      : {}),
+  },
+  customerio: {
+    apiSecret: env.CUSTOMERIO_API_SECRET,
+  },
+  cron: {
+    ...(env.CRON_SECRET ? { secret: env.CRON_SECRET } : {}),
+  },
+  slack: {
+    ...(env.SLACK_WEBHOOK_URL ? { webhookUrl: env.SLACK_WEBHOOK_URL } : {}),
+  },
   roas: {
-    productMappings: roasProductMappings,
+    productMappings: parseRoasProductMappings(env.ROAS_PRODUCT_MAPPINGS),
   },
 };
 
 function readMongoDbUrl(): string {
-  const value = getOptionalEnv('MONGO_DB_URL');
-
-  if (value) {
-    return value;
+  if (env.MONGO_DB_URL) {
+    return env.MONGO_DB_URL;
   }
 
-  if (getOptionalEnv('VERCEL')) {
+  if (env.VERCEL) {
     throw new Error('Missing required environment variable: MONGO_DB_URL');
   }
 

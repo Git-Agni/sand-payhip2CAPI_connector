@@ -4,7 +4,7 @@ import type { MetaInsightsCampaignRow } from '../models/meta.models.js';
 import { PayhipPurchaseModel } from '../models/payhipPurchase.schema.js';
 import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
-import { makeMetaInsightsService } from './metaInsights.service.js';
+import { type MetaInsightsService } from './metaInsights.service.js';
 
 export type RoasReportPeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -38,9 +38,9 @@ interface StoredPayhipItem {
   readonly product_name?: string;
 }
 
-const metaInsightsService = makeMetaInsightsService();
+export type RoasReportService = ReturnType<typeof makeRoasReportService>
 
-export function makeRoasReportService() {
+export function makeRoasReportService({ metaInsightsService }: { metaInsightsService: MetaInsightsService }) {
   async function logCampaignRoas(period: RoasReportPeriod): Promise<void> {
     const dateRange = resolveDateRange(period, new Date());
     const [productRevenue, metaRows] = await Promise.all([
@@ -256,7 +256,7 @@ function aggregateSpendByCampaignId(
     spendByCampaignId.set(
       campaignId,
       (spendByCampaignId.get(campaignId) ?? 0) +
-        (Number.isFinite(spend) ? spend : 0),
+      (Number.isFinite(spend) ? spend : 0),
     );
   }
 
