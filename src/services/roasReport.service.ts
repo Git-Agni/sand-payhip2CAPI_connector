@@ -78,20 +78,6 @@ export function makeRoasReportService({
       config.roas.productMappings,
     );
 
-    for (const row of reportRows) {
-      logger.info(formatRoasLogMessage(period, dateRange, row), {
-        period,
-        campaignId: row.campaignId,
-        campaignName: row.campaignName,
-        productId: row.productId,
-        productName: row.productName,
-        revenue: roundMoney(row.revenue),
-        spend: roundMoney(row.spend),
-        roas: row.roas === null ? null : roundRatio(row.roas),
-        purchaseCount: row.purchaseCount,
-      });
-    }
-
     await sendSlackRoasReport(period, dateRange, reportRows);
   }
 
@@ -353,23 +339,6 @@ function roundMoney(value: number): number {
 
 function roundRatio(value: number): number {
   return Math.round(value * 10_000) / 10_000;
-}
-
-function formatRoasLogMessage(
-  period: RoasReportPeriod,
-  dateRange: DateRange,
-  row: RoasReportRow,
-): string {
-  return [
-    `ROAS ${period}`,
-    `${dateRange.metaSince}..${dateRange.metaUntil}`,
-    `campaign ${row.campaignName} (${row.campaignId})`,
-    `product ${row.productName} (${row.productId})`,
-    `revenue ${formatMoney(row.revenue)}`,
-    `spend ${formatMoney(row.spend)}`,
-    `roas ${row.roas === null ? 'n/a' : `${roundRatio(row.roas)}x`}`,
-    `purchases ${row.purchaseCount}`,
-  ].join(' | ');
 }
 
 function formatMoney(value: number): string {
