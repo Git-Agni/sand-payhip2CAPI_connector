@@ -45,6 +45,18 @@ const defaultRoasProductMappings: readonly RoasProductMapping[] = [
     campaignId: '120246047047580642',
     productId: '6976231',
   },
+  {
+    campaignId: '120246047047580642',
+    productId: '7854301',
+  },
+  {
+    campaignId: 'organic',
+    productId: '6769995',
+  },
+  {
+    campaignId: 'organic',
+    productId: '7562115',
+  },
 ];
 
 const getRequiredEnv = (name: string): string => {

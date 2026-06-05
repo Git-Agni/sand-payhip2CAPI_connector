@@ -33,14 +33,35 @@ interface RoasReportRow {
   readonly purchaseCount: number;
 }
 
+interface SlackCampaignProduct {
+  readonly productId: string;
+  readonly productName: string;
+  readonly revenue: number;
+  readonly purchaseCount: number;
+}
+
+interface SlackCampaignGroup {
+  readonly campaignId: string;
+  readonly campaignName: string;
+  readonly revenue: number;
+  readonly spend: number;
+  readonly roas: number | null;
+  readonly purchaseCount: number;
+  readonly products: readonly SlackCampaignProduct[];
+}
+
 interface StoredPayhipItem {
   readonly product_id: string;
   readonly product_name?: string;
 }
 
-export type RoasReportService = ReturnType<typeof makeRoasReportService>
+export type RoasReportService = ReturnType<typeof makeRoasReportService>;
 
-export function makeRoasReportService({ metaInsightsService }: { metaInsightsService: MetaInsightsService }) {
+export function makeRoasReportService({
+  metaInsightsService,
+}: {
+  metaInsightsService: MetaInsightsService;
+}) {
   async function logCampaignRoas(period: RoasReportPeriod): Promise<void> {
     const dateRange = resolveDateRange(period, new Date());
     const [productRevenue, metaRows] = await Promise.all([
@@ -256,7 +277,7 @@ function aggregateSpendByCampaignId(
     spendByCampaignId.set(
       campaignId,
       (spendByCampaignId.get(campaignId) ?? 0) +
-      (Number.isFinite(spend) ? spend : 0),
+        (Number.isFinite(spend) ? spend : 0),
     );
   }
 
@@ -397,16 +418,17 @@ async function sendSlackRoasReport(
   });
 }
 
-function formatSlackRoasReport(
+export function formatSlackRoasReport(
   period: RoasReportPeriod,
   dateRange: DateRange,
   reportRows: readonly RoasReportRow[],
 ): string {
-  const totals = reportRows.reduce(
-    (summary, row) => ({
-      revenue: summary.revenue + row.revenue,
-      spend: summary.spend + row.spend,
-      purchaseCount: summary.purchaseCount + row.purchaseCount,
+  const campaignGroups = buildSlackCampaignGroups(reportRows);
+  const totals = campaignGroups.reduce(
+    (summary, campaign) => ({
+      revenue: summary.revenue + campaign.revenue,
+      spend: summary.spend + campaign.spend,
+      purchaseCount: summary.purchaseCount + campaign.purchaseCount,
     }),
     {
       revenue: 0,
@@ -416,8 +438,8 @@ function formatSlackRoasReport(
   );
   const totalRoas = totals.spend > 0 ? totals.revenue / totals.spend : null;
   const lines =
-    reportRows.length > 0
-      ? reportRows.map(formatSlackRoasRow)
+    campaignGroups.length > 0
+      ? [campaignGroups.map(formatSlackCampaignGroup).join('\n\n\n')]
       : ['No campaign or product activity found for this period.'];
 
   return [
@@ -431,16 +453,106 @@ function formatSlackRoasReport(
     `🛒 *Purchases:* ${totals.purchaseCount}`,
     '',
     '*Campaign Breakdown*',
+    '',
     ...lines,
   ].join('\n');
 }
 
-function formatSlackRoasRow(row: RoasReportRow): string {
+function buildSlackCampaignGroups(
+  reportRows: readonly RoasReportRow[],
+): readonly SlackCampaignGroup[] {
+  const groups = new Map<
+    string,
+    {
+      campaignId: string;
+      campaignName: string;
+      spend: number;
+      products: Map<string, SlackCampaignProduct>;
+    }
+  >();
+
+  for (const row of reportRows) {
+    const hasProductData =
+      row.productId !== 'unknown product' &&
+      (row.revenue > 0 || row.purchaseCount > 0);
+    const hasCampaignData = row.spend > 0 || hasProductData;
+
+    if (!hasCampaignData) {
+      continue;
+    }
+
+    const existing = groups.get(row.campaignId);
+    const group = existing ?? {
+      campaignId: row.campaignId,
+      campaignName: row.campaignName,
+      spend: 0,
+      products: new Map<string, SlackCampaignProduct>(),
+    };
+
+    group.spend = Math.max(group.spend, row.spend);
+
+    if (group.campaignName === 'unknown campaign') {
+      group.campaignName = row.campaignName;
+    }
+
+    if (hasProductData) {
+      const existingProduct = group.products.get(row.productId);
+
+      group.products.set(row.productId, {
+        productId: row.productId,
+        productName:
+          existingProduct?.productName === 'unknown product'
+            ? row.productName
+            : (existingProduct?.productName ?? row.productName),
+        revenue: (existingProduct?.revenue ?? 0) + row.revenue,
+        purchaseCount:
+          (existingProduct?.purchaseCount ?? 0) + row.purchaseCount,
+      });
+    }
+
+    groups.set(row.campaignId, group);
+  }
+
+  return [...groups.values()].map((group) => {
+    const products = [...group.products.values()];
+    const revenue = products.reduce((sum, product) => sum + product.revenue, 0);
+    const purchaseCount = products.reduce(
+      (sum, product) => sum + product.purchaseCount,
+      0,
+    );
+
+    return {
+      campaignId: group.campaignId,
+      campaignName: group.campaignName,
+      revenue,
+      spend: group.spend,
+      roas: group.spend > 0 ? revenue / group.spend : null,
+      purchaseCount,
+      products,
+    };
+  });
+}
+
+function formatSlackCampaignGroup(campaign: SlackCampaignGroup): string {
+  if (isOrganicCampaign(campaign.campaignId)) {
+    return [
+      `• 🌱 Organic purchase → 💰 Revenue: ${formatMoney(campaign.revenue)} | 🛒 Purchases: ${campaign.purchaseCount}`,
+      ...campaign.products.map(formatSlackProductLine),
+    ].join('\n');
+  }
+
   return [
-    `• 🎯 *${row.campaignName}* (${row.campaignId})`,
-    `  ↳ 📦 ${row.productName} (${row.productId})`,
-    `  ↳ 💰 Revenue: ${formatMoney(row.revenue)} | 💸 Spend: ${formatMoney(row.spend)} | 📈 ROAS: ${formatRoas(row.roas)} | 🛒 Purchases: ${row.purchaseCount}`,
+    `• 🎯 Campaign: *${campaign.campaignName}* (${campaign.campaignId}) → 💰 Revenue: ${formatMoney(campaign.revenue)} | 💸 Spend: ${formatMoney(campaign.spend)} | 📈 ROAS: ${formatRoas(campaign.roas)} | 🛒 Purchases: ${campaign.purchaseCount}`,
+    ...campaign.products.map(formatSlackProductLine),
   ].join('\n');
+}
+
+function isOrganicCampaign(campaignId: string): boolean {
+  return campaignId.trim().toLowerCase() === 'organic';
+}
+
+function formatSlackProductLine(product: SlackCampaignProduct): string {
+  return `  ↳ 📦 Product: *${product.productName}* (${product.productId}) | 💰 Revenue: ${formatMoney(product.revenue)} | 🛒 Purchases: ${product.purchaseCount}`;
 }
 
 function formatRoas(value: number | null): string {
@@ -448,5 +560,5 @@ function formatRoas(value: number | null): string {
 }
 
 function formatPeriodLabel(period: RoasReportPeriod): string {
-  return period.charAt(0).toUpperCase() + period.slice(1);
+  return period.toUpperCase();
 }
