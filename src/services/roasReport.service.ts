@@ -5,55 +5,16 @@ import { connectToDatabase } from './database.service.js';
 import { logger } from './logging.service.js';
 import { type MetaInsightsService } from './metaInsights.service.js';
 import type { PayhipPurchaseService } from './payhipPurchase.service.js';
+import type {
+  DateRange,
+  ProductRevenue,
+  RoasReportRow,
+  SlackCampaignGroup,
+  SlackCampaignProduct,
+  StoredPayhipItem,
+} from '../types/roas-report.types.js';
 
 export type RoasReportPeriod = 'daily' | 'weekly' | 'monthly';
-
-interface DateRange {
-  readonly start: Date;
-  readonly end: Date;
-  readonly metaSince: string;
-  readonly metaUntil: string;
-}
-
-interface ProductRevenue {
-  readonly productId: string;
-  readonly productName: string;
-  readonly revenue: number;
-  readonly purchaseCount: number;
-}
-
-interface RoasReportRow {
-  readonly campaignId: string;
-  readonly campaignName: string;
-  readonly productId: string;
-  readonly productName: string;
-  readonly revenue: number;
-  readonly spend: number;
-  readonly roas: number | null;
-  readonly purchaseCount: number;
-}
-
-interface SlackCampaignProduct {
-  readonly productId: string;
-  readonly productName: string;
-  readonly revenue: number;
-  readonly purchaseCount: number;
-}
-
-interface SlackCampaignGroup {
-  readonly campaignId: string;
-  readonly campaignName: string;
-  readonly revenue: number;
-  readonly spend: number;
-  readonly roas: number | null;
-  readonly purchaseCount: number;
-  readonly products: readonly SlackCampaignProduct[];
-}
-
-interface StoredPayhipItem {
-  readonly product_id: string;
-  readonly product_name?: string;
-}
 
 export type RoasReportService = ReturnType<typeof makeRoasReportService>;
 
@@ -126,11 +87,11 @@ export function makeRoasReportService({
       metaRows.flatMap((row) =>
         row.campaign_id
           ? [
-            [
-              row.campaign_id,
-              row.campaign_name ?? 'unknown campaign',
-            ] as const,
-          ]
+              [
+                row.campaign_id,
+                row.campaign_name ?? 'unknown campaign',
+              ] as const,
+            ]
           : [],
       ),
     );
@@ -202,7 +163,7 @@ export function makeRoasReportService({
       spendByCampaignId.set(
         campaignId,
         (spendByCampaignId.get(campaignId) ?? 0) +
-        (Number.isFinite(spend) ? spend : 0),
+          (Number.isFinite(spend) ? spend : 0),
       );
     }
 
@@ -334,7 +295,12 @@ export function makeRoasReportService({
         purchaseCount: 0,
       },
     );
-    const totalRoas = totals.spend > 0 ? totals.revenue / totals.spend : null;
+    const paidRevenue = campaignGroups
+      .filter((campaign) => !isOrganicCampaign(campaign.campaignId))
+      .reduce((sum, campaign) => sum + campaign.revenue, 0);
+    const organicAndPaidRoas =
+      totals.spend > 0 ? totals.revenue / totals.spend : null;
+    const paidRoas = totals.spend > 0 ? paidRevenue / totals.spend : null;
     const lines =
       campaignGroups.length > 0
         ? [campaignGroups.map(formatSlackCampaignGroup).join('\n\n\n')]
@@ -347,7 +313,7 @@ export function makeRoasReportService({
       '*Summary*',
       `💰 *Revenue:* ${formatMoney(totals.revenue)}`,
       `💸 *Ad spend:* ${formatMoney(totals.spend)}`,
-      `📈 *ROAS:* ${formatRoas(totalRoas)}`,
+      `📈 *ROAS:* ${formatSplitRoas(organicAndPaidRoas, paidRoas)}`,
       `🛒 *Purchases:* ${totals.purchaseCount}`,
       '',
       '*Campaign Breakdown*',
@@ -458,6 +424,13 @@ export function makeRoasReportService({
 
   function formatRoas(value: number | null): string {
     return value === null ? 'n/a' : `${roundRatio(value)}x`;
+  }
+
+  function formatSplitRoas(
+    organicAndPaidRoas: number | null,
+    paidRoas: number | null,
+  ): string {
+    return `${formatRoas(organicAndPaidRoas)} (organic + paid) | ${formatRoas(paidRoas)} (paid)`;
   }
 
   function formatPeriodLabel(period: RoasReportPeriod): string {

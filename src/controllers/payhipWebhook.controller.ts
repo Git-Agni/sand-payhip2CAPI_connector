@@ -8,15 +8,15 @@ import { sha256Raw } from '../utils/hash.js';
 import { type CustomerIoService } from '../services/customerio.service.js';
 import { type PayhipPurchaseService } from '../services/payhipPurchase.service.js';
 
-export default function makePayhipController({ metaCapiService,
+export default function makePayhipController({
+  metaCapiService,
   customerIoService,
-  payhipPurchaseService
+  payhipPurchaseService,
 }: {
-  metaCapiService: MetaCapiService,
-  customerIoService: CustomerIoService,
-  payhipPurchaseService: PayhipPurchaseService
+  metaCapiService: MetaCapiService;
+  customerIoService: CustomerIoService;
+  payhipPurchaseService: PayhipPurchaseService;
 }) {
-
   const hasValidPayhipSignature = (signature: unknown): boolean => {
     if (!config.payhip.apiKey) {
       return true;
@@ -50,7 +50,9 @@ export default function makePayhipController({ metaCapiService,
     if (request.body?.type !== 'paid') {
       logger.info('Ignored unsupported Payhip webhook event', {
         eventType:
-          typeof request.body?.type === 'string' ? request.body.type : 'unknown',
+          typeof request.body?.type === 'string'
+            ? request.body.type
+            : 'unknown',
       });
       response
         .status(200)
@@ -96,7 +98,6 @@ export default function makePayhipController({ metaCapiService,
     }
   };
   return {
-    handlePayhipWebhook
-  }
+    handlePayhipWebhook,
+  };
 }
-

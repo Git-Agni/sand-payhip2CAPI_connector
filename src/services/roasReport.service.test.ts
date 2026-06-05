@@ -92,15 +92,58 @@ describe('formatSlackRoasReport', () => {
     );
 
     expect(report).toContain(
-      'Campaign: *Launch Campaign* (campaign-1) → 💰 Revenue: $125.00 | 💸 Spend: $50.00 | 📈 ROAS: 2.5x | 🛒 Purchases: 3',
+      '📈 *ROAS:* 2.5x (organic + paid) | 2.5x (paid)',
     );
     expect(report).toContain(
-      'Product: *Course* (product-1) | 💰 Revenue: $100.00 | 🛒 Purchases: 2',
+      'Campaign: *Launch Campaign* (campaign-1) → \n  ↳ 💰 Revenue: $125.00 | 💸 Spend: $50.00 | 📈 ROAS: 2.5x | 🛒 Purchases: 3',
     );
     expect(report).toContain(
-      'Product: *Template* (product-2) | 💰 Revenue: $25.00 | 🛒 Purchases: 1',
+      'Product: *Course* (product-1) \n    ↳ 💰 Revenue: $100.00 | 🛒 Purchases: 2',
+    );
+    expect(report).toContain(
+      'Product: *Template* (product-2) \n    ↳ 💰 Revenue: $25.00 | 🛒 Purchases: 1',
     );
     expect(report).toContain('💸 *Ad spend:* $50.00');
+  });
+
+  it('splits summary ROAS into organic plus paid and paid-only values', async () => {
+    const { formatSlackRoasReport } = makeTestRoasReportService();
+
+    const report = formatSlackRoasReport(
+      'daily',
+      {
+        start: new Date('2026-06-02T00:00:00.000Z'),
+        end: new Date('2026-06-02T23:59:59.999Z'),
+        metaSince: '2026-06-02',
+        metaUntil: '2026-06-02',
+      },
+      [
+        {
+          campaignId: 'campaign-1',
+          campaignName: 'Launch Campaign',
+          productId: 'product-1',
+          productName: 'Course',
+          revenue: 100,
+          spend: 50,
+          roas: 2,
+          purchaseCount: 2,
+        },
+        {
+          campaignId: 'organic',
+          campaignName: 'unknown campaign',
+          productId: 'product-2',
+          productName: 'Template',
+          revenue: 25,
+          spend: 0,
+          roas: null,
+          purchaseCount: 1,
+        },
+      ],
+    );
+
+    expect(report).toContain(
+      '📈 *ROAS:* 2.5x (organic + paid) | 2x (paid)',
+    );
   });
 
   it('adds two blank lines between campaign groups', async () => {
@@ -139,7 +182,7 @@ describe('formatSlackRoasReport', () => {
     );
 
     expect(report).toContain(
-      'Product: *Course* (product-1) | 💰 Revenue: $100.00 | 🛒 Purchases: 2\n\n\n• 🎯 Campaign: *Retargeting Campaign* (campaign-2)',
+      'Product: *Course* (product-1) \n    ↳ 💰 Revenue: $100.00 | 🛒 Purchases: 2\n\n\n• 🎯 Campaign: *Retargeting Campaign* (campaign-2)',
     );
   });
 
@@ -201,10 +244,10 @@ describe('formatSlackRoasReport', () => {
     );
 
     expect(report).toContain(
-      '🌱 Organic purchase → 💰 Revenue: $100.00 | 🛒 Purchases: 2',
+      '🌱 Organic purchase → \n  ↳ 💰 Revenue: $100.00  🛒 Purchases: 2',
     );
     expect(report).toContain(
-      'Product: *Course* (product-1) | 💰 Revenue: $100.00 | 🛒 Purchases: 2',
+      'Product: *Course* (product-1) \n    ↳ 💰 Revenue: $100.00 | 🛒 Purchases: 2',
     );
     expect(report).not.toContain('Campaign: *unknown campaign* (organic)');
   });
