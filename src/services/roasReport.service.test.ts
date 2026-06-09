@@ -91,9 +91,8 @@ describe('formatSlackRoasReport', () => {
       ],
     );
 
-    expect(report).toContain(
-      '📈 *ROAS:* 2.5x (organic + paid) | 2.5x (paid)',
-    );
+    expect(report).toContain('📈 *ROAS (Return on Ad Spend):* 2.5x');
+    expect(report).toContain('📊 *MER (Marketing Efficiency Ratio):* 2.5x');
     expect(report).toContain(
       'Campaign: *Launch Campaign* (campaign-1) → \n  ↳ 💰 Revenue: $125.00 | 💸 Spend: $50.00 | 📈 ROAS: 2.5x | 🛒 Purchases: 3',
     );
@@ -106,7 +105,7 @@ describe('formatSlackRoasReport', () => {
     expect(report).toContain('💸 *Ad spend:* $50.00');
   });
 
-  it('splits summary ROAS into organic plus paid and paid-only values', async () => {
+  it('shows attributed ROAS separately from organic plus paid MER', async () => {
     const { formatSlackRoasReport } = makeTestRoasReportService();
 
     const report = formatSlackRoasReport(
@@ -141,9 +140,47 @@ describe('formatSlackRoasReport', () => {
       ],
     );
 
-    expect(report).toContain(
-      '📈 *ROAS:* 2.5x (organic + paid) | 2x (paid)',
+    expect(report).toContain('📈 *ROAS (Return on Ad Spend):* 2x');
+    expect(report).toContain('📊 *MER (Marketing Efficiency Ratio):* 2.5x');
+  });
+
+  it('excludes unattributed revenue from ROAS but includes it in MER', async () => {
+    const { formatSlackRoasReport } = makeTestRoasReportService();
+
+    const report = formatSlackRoasReport(
+      'daily',
+      {
+        start: new Date('2026-06-02T00:00:00.000Z'),
+        end: new Date('2026-06-02T23:59:59.999Z'),
+        metaSince: '2026-06-02',
+        metaUntil: '2026-06-02',
+      },
+      [
+        {
+          campaignId: 'campaign-1',
+          campaignName: 'Launch Campaign',
+          productId: 'product-1',
+          productName: 'Course',
+          revenue: 100,
+          spend: 50,
+          roas: 2,
+          purchaseCount: 2,
+        },
+        {
+          campaignId: 'unknown campaign',
+          campaignName: 'unknown campaign',
+          productId: 'product-2',
+          productName: 'Template',
+          revenue: 25,
+          spend: 0,
+          roas: null,
+          purchaseCount: 1,
+        },
+      ],
     );
+
+    expect(report).toContain('📈 *ROAS (Return on Ad Spend):* 2x');
+    expect(report).toContain('📊 *MER (Marketing Efficiency Ratio):* 2.5x');
   });
 
   it('adds two blank lines between campaign groups', async () => {

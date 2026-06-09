@@ -8,7 +8,7 @@ import type {
 import { sha256Normalized } from '../utils/hash.js';
 import { logger } from './logging.service.js';
 
-export type MetaCapiService = ReturnType<typeof makeMetaCapiService>
+export type MetaCapiService = ReturnType<typeof makeMetaCapiService>;
 
 export function makeMetaCapiService() {
   async function sendPurchaseFromPayhip(

@@ -295,12 +295,11 @@ export function makeRoasReportService({
         purchaseCount: 0,
       },
     );
-    const paidRevenue = campaignGroups
-      .filter((campaign) => !isOrganicCampaign(campaign.campaignId))
+    const attributedRevenue = campaignGroups
+      .filter((campaign) => isAttributedCampaign(campaign.campaignId))
       .reduce((sum, campaign) => sum + campaign.revenue, 0);
-    const organicAndPaidRoas =
-      totals.spend > 0 ? totals.revenue / totals.spend : null;
-    const paidRoas = totals.spend > 0 ? paidRevenue / totals.spend : null;
+    const mer = totals.spend > 0 ? totals.revenue / totals.spend : null;
+    const roas = totals.spend > 0 ? attributedRevenue / totals.spend : null;
     const lines =
       campaignGroups.length > 0
         ? [campaignGroups.map(formatSlackCampaignGroup).join('\n\n\n')]
@@ -313,7 +312,8 @@ export function makeRoasReportService({
       '*Summary*',
       `💰 *Revenue:* ${formatMoney(totals.revenue)}`,
       `💸 *Ad spend:* ${formatMoney(totals.spend)}`,
-      `📈 *ROAS:* ${formatSplitRoas(organicAndPaidRoas, paidRoas)}`,
+      `📈 *ROAS (Return on Ad Spend):* ${formatReturnRatio(roas)}`,
+      `📊 *MER (Marketing Efficiency Ratio):* ${formatReturnRatio(mer)}`,
       `🛒 *Purchases:* ${totals.purchaseCount}`,
       '',
       '*Campaign Breakdown*',
@@ -409,7 +409,7 @@ export function makeRoasReportService({
     }
 
     return [
-      `• 🎯 Campaign: *${campaign.campaignName}* (${campaign.campaignId}) → \n  ↳ 💰 Revenue: ${formatMoney(campaign.revenue)} | 💸 Spend: ${formatMoney(campaign.spend)} | 📈 ROAS: ${formatRoas(campaign.roas)} | 🛒 Purchases: ${campaign.purchaseCount}`,
+      `• 🎯 Campaign: *${campaign.campaignName}* (${campaign.campaignId}) → \n  ↳ 💰 Revenue: ${formatMoney(campaign.revenue)} | 💸 Spend: ${formatMoney(campaign.spend)} | 📈 ROAS: ${formatReturnRatio(campaign.roas)} | 🛒 Purchases: ${campaign.purchaseCount}`,
       ...campaign.products.map(formatSlackProductLine),
     ].join('\n');
   }
@@ -418,19 +418,21 @@ export function makeRoasReportService({
     return campaignId.trim().toLowerCase() === 'organic';
   }
 
+  function isAttributedCampaign(campaignId: string): boolean {
+    const normalizedCampaignId = campaignId.trim().toLowerCase();
+
+    return (
+      normalizedCampaignId !== 'organic' &&
+      normalizedCampaignId !== 'unknown campaign'
+    );
+  }
+
   function formatSlackProductLine(product: SlackCampaignProduct): string {
     return `  ↳ 📦 Product: *${product.productName}* (${product.productId}) \n    ↳ 💰 Revenue: ${formatMoney(product.revenue)} | 🛒 Purchases: ${product.purchaseCount}`;
   }
 
-  function formatRoas(value: number | null): string {
+  function formatReturnRatio(value: number | null): string {
     return value === null ? 'n/a' : `${roundRatio(value)}x`;
-  }
-
-  function formatSplitRoas(
-    organicAndPaidRoas: number | null,
-    paidRoas: number | null,
-  ): string {
-    return `${formatRoas(organicAndPaidRoas)} (organic + paid) | ${formatRoas(paidRoas)} (paid)`;
   }
 
   function formatPeriodLabel(period: RoasReportPeriod): string {
