@@ -306,7 +306,7 @@ export function makeRoasReportService({
         : ['No campaign or product activity found for this period.'];
 
     return [
-      `📊 *Payhip × Meta ROAS ${formatPeriodLabel(period)} Report*`,
+      `📊 *${formatReportTitle(period)}*`,
       `🗓️ *Date range:* ${dateRange.metaSince} → ${dateRange.metaUntil}`,
       '',
       '*Summary*',
@@ -437,6 +437,20 @@ export function makeRoasReportService({
 
   function formatPeriodLabel(period: RoasReportPeriod): string {
     return period.toUpperCase();
+  }
+
+  function formatReportTitle(period: RoasReportPeriod): string {
+    const label = formatPeriodLabel(period);
+
+    switch (period) {
+      case 'weekly':
+        return `:date:${label} Report:date:`;
+      case 'monthly':
+        return `:date:${label} Report:date::full_moon_with_face:`;
+      case 'daily':
+      default:
+        return `:date:${label} Report`;
+    }
   }
   async function logCampaignRoas(period: RoasReportPeriod): Promise<void> {
     const dateRange = resolveDateRange(period, new Date());
